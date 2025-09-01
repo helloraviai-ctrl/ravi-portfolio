@@ -1,50 +1,43 @@
-
-import { notFound } from "next/navigation";
+// app/projects/[slug]/page.tsx
 import Image from "next/image";
-import Link from "next/link";
-import { projects, projectMap } from "@/content/projects";
+import { notFound } from "next/navigation";
+import LinkButton from "@/components/LinkButton";
+import { projectMap } from "@/content/projects";
 
-export const dynamicParams = false;
+type Props = { params: { slug: string } };
 
 export function generateStaticParams() {
-  return projects.map(p => ({ slug: p.slug }));
+  return Object.keys(projectMap).map((slug) => ({ slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const item = projectMap[params.slug];
-  if (!item) return {};
-  return {
-    title: `${item.meta.title} | Projects | Ravi Singh`,
-    description: item.meta.summary,
-    openGraph: { images: [item.meta.cover] }
-  };
+export function generateMetadata({ params }: Props) {
+  const p = projectMap[params.slug];
+  if (!p) return { title: "Project | Ravi Singh" };
+  return { title: `${p.meta.title} | Ravi Singh`, description: p.meta.summary };
 }
 
-export default function ProjectPage({ params }: { params: { slug: string } }) {
-  const item = projectMap[params.slug];
-  if (!item) return notFound();
-  const Comp = item.component as any;
+export default function ProjectPage({ params }: Props) {
+  const proj = projectMap[params.slug];
+  if (!proj) return notFound();
+  const { meta, component: Content } = proj;
+
   return (
-    <article className="prose max-w-none">
-      <h1>{item.meta.title}</h1>
-      <p className="text-gray-700">{item.meta.summary}</p>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">{meta.title}</h1>
+      <p className="text-gray-700">{meta.summary}</p>
 
-      <div className="relative w-full h-80 my-4">
-        <Image src={item.meta.cover} alt={item.meta.title} fill className="rounded-xl object-cover" />
+      <div className="relative w-full h-72 rounded-xl overflow-hidden shadow">
+        <Image src={meta.cover} alt={meta.title} fill className="object-cover" priority />
       </div>
 
-      <div className="not-prose grid md:grid-cols-3 gap-3 my-4 text-sm">
-        <div className="glass p-4"><strong>Date:</strong> {item.meta.date}</div>
-        <div className="glass p-4"><strong>Tech:</strong> {item.meta.tech.join(", ")}</div>
-        <div className="glass p-4"><strong>Badges:</strong> {item.meta.badges?.join(", ") || "—"}</div>
+      <div className="flex flex-wrap gap-3">
+        {meta.demo && <LinkButton href={meta.demo}>Open live app</LinkButton>}
+        {meta.repo && <LinkButton href={meta.repo} variant="outline">View source</LinkButton>}
       </div>
 
-      <Comp />
-
-      <div className="not-prose flex gap-3 mt-6">
-        {item.meta.demo && <Link href={item.meta.demo} className="rounded-2xl bg-accent text-white px-5 py-2" target="_blank">Live Demo</Link>}
-        {item.meta.repo && <Link href={item.meta.repo} className="rounded-2xl border px-5 py-2" target="_blank">Source Code</Link>}
+      <div className="rounded-2xl p-4 bg-white border">
+        <Content />
       </div>
-    </article>
+    </div>
   );
 }
